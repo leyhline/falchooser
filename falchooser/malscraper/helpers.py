@@ -11,8 +11,8 @@ import datetime
 import argparse
 from typing import Sequence
 
-from .scraper import read_titles, MalEntry
-from .dbaccess import Statistics, Anime, Database, Base
+from .scraper import read_titles, MalEntry, read_teamlist
+from .dbaccess import Statistics, Anime, Database, User, Base
 
 
 START_OF_DATA_COLLECTION = datetime.date(2017, 4, 2)
@@ -113,6 +113,22 @@ def insert_statistics(year: int, quarter: int, ignored: bool=False, y: bool=Fals
     assert len(stats) == len(urls), ("Number of objects ({})".format(len(stats)),
             "and lines in titles file ({}) does not match.".format(len(urls)))
     db_insert(stats, y)
+
+
+def insert_teamlist(filepath: str) -> None:
+    """
+    Insert users and teams into database.
+    :param filepath: Path to teamlist-seasonYY.txt
+    """
+    teams = read_teamlist(filepath)
+    db = Database()
+    session = db.get_session()
+    for username in teams:
+        user = User(name=username)
+        for anime in teams[username]:
+            user.anime.append(session.query(Anime).filter(Anime.title==anime).first())
+    session.commit()
+    session.close()
 
 
 def cmd_stats_insert() -> None:

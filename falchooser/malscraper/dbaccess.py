@@ -11,10 +11,10 @@ Created on Apr 1, 2017
 from configparser import ConfigParser
 import os
 
-from sqlalchemy import Column, ForeignKey, create_engine
+from sqlalchemy import Column, ForeignKey, create_engine, Table
 from sqlalchemy import Integer, Float, DateTime, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
 
 
 CONFIG = ConfigParser()
@@ -28,6 +28,11 @@ except KeyError as e:
 Base = declarative_base()
 
 
+user_anime_team = Table("user_anime_team", Base.metadata,
+                        Column("users", ForeignKey("user.id"), primary_key=True),
+                        Column("anime", ForeignKey("anime.id"), primary_key=True))
+
+
 class Anime(Base):
     """
     This table just holds the anime's title and id.
@@ -36,6 +41,7 @@ class Anime(Base):
     id = Column(Integer, primary_key=True, autoincrement=False)
     title = Column(String(1024), nullable=False)
     url = Column(String(2048), nullable=False, unique=True)
+    users = relationship("User", secondary=user_anime_team, back_populates="anime")
 
     def __repr__(self):
         return "<Anime(id={}, title={})>".format(self.id, self.title)
@@ -65,6 +71,19 @@ class Statistics(Base):
         return "<Statistics(anime={}, day={}, accessed={})>".format(self.anime, self.day, self.accessed)
 
 
+class User(Base):
+    """
+    Simple list of MAL usernames.
+    """
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(256), nullable=False, unique=True)
+    anime = relationship("Anime", secondary=user_anime_team, back_populates="users")
+
+    def __repr__(self):
+        return "<User(id={}, name={})>".format(self.id, self.name)
+
+
 class Database:
     """
     Simple database class for creating tables and
@@ -84,4 +103,3 @@ class Database:
 
     def get_session(self) -> Session:
         return self._sessionmaker()
-

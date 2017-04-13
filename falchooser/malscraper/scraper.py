@@ -261,3 +261,26 @@ class MalEntry:
         elif re_type.name == "COMMA" or "USERS":
             value = value.replace(",","")
         return int(value)
+
+
+def read_teamlist(filepath: str) -> Mapping[str, Sequence[str]]:
+    """
+    Read and parse teamlist file.
+    :param filepath: Path to teamlist-seasonYY.txt
+    :return: Dictionary mapping usernames to a tuple of anime titles. 
+    """
+    with open(filepath, "r") as fd:
+        assert fd.readline()[:9] == "Team List"
+        return_dict = dict()
+        for line in fd:
+            if not line.isspace():
+                username = line.strip()
+                title_list = []
+                assert re.match(r"""---+""", next(fd)) 
+                for i in range(5):
+                    title_list.append(next(fd).strip())
+                assert next(fd).isspace()
+                for i in range(2):
+                    title_list.append(next(fd).strip())
+                return_dict[username] = tuple(title_list)
+    return return_dict
